@@ -52,13 +52,14 @@ size_t fread_wavefront_geometry(wavefront_geometry_t *geometry, FILE *restrict f
             memcpy(&vertices[vw], vertex, 4*sizeof(float));
             vw += 4;
         }
+        /*
         if (linebuf[0] == GEOMETRY_FACE_MARKER) {
             const size_t vertices_count = count_numbers(linebuf);
             idx_t *face_vertices = (idx_t *)malloc(vertices_count * sizeof(idx_t));
             size_t j = 0;
             char *caret = &linebuf[1]; // Discarding letter 'f' initially.
             char *rest;
-            while (1) {
+            while (j < vertices_count) {
                 const idx_t idx = strtol(caret, &rest, 10);
                 if (idx == 0) { // No conversion could be performed.
                     break;
@@ -67,9 +68,11 @@ size_t fread_wavefront_geometry(wavefront_geometry_t *geometry, FILE *restrict f
                 caret = rest;
             }
             faces[fw].indices = face_vertices;
-            faces[fw].vertices_count = j;
+            faces[fw].vertices_count = vertices_count;
             fw++;
+            free(face_vertices);
         }
+        */
     }
     free(linebuf);
 
