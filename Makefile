@@ -1,11 +1,16 @@
-C_COMPILER = clang
-OUT_DIR = out
+CC = clang
+LIB_DIR = lib
+OBJ_DIR = obj
 
-libwavefront.a: wavefront.o
-	ar -rcs $(OUT_DIR)/libwavefront.a $(OUT_DIR)/wavefront.o
+.PHONY: clean
 
-wavefront.o: wavefront.c wavefront.h
-	$(C_COMPILER) -c wavefront.c -o $(OUT_DIR)/wavefront.o
+$(LIB_DIR)/libwavefront.a: $(OBJ_DIR)/wavefront.o
+	@mkdir -p $(@D)
+	ar -rcs $(@D)/libwavefront.a $(OBJ_DIR)/wavefront.o
+
+$(OBJ_DIR)/%.o: %.c %.h
+	@mkdir -p $(@D)
+	$(CC) -c $< -o $@
 
 clean:
-	rm -f $(OUT_DIR)/*.o $(OUT_DIR)/*.a
+	rm -rf $(LIB_DIR) $(OBJ_DIR)
