@@ -1,4 +1,4 @@
-#include "wavefront.h"
+#include "./../include/wavefront.h"
 
 #include <stdio.h>
 #include <stddef.h>
@@ -11,7 +11,7 @@ const char GEOMETRY_FACE_MARKER = 'f';
 const char COMMENT_MARKER = '#';
 
 const size_t MESH_VERTEX_COUNT_DEFAULT = 1024;
-const size_t LARGE_MESH_VERTEX_COUNT_DEFAULT = 8192;
+const size_t LARGE_MESH_VERTEX_COUNT_DEFAULT = 1000000;
 
 size_t count_numbers(const char *line);
 size_t trim_comment(char *line);
@@ -37,8 +37,8 @@ size_t fread_wavefront_geometry(wavefront_geometry_t *geometry, FILE *restrict f
         if (linebuf[0] == GEOMETRY_VERTEX_MARKER && !isalpha(linebuf[1])) {
             // Now line looks like "v %f %f %f [%f]" and we can parse it with scanf easily.
             float vertex[4] = { 0, 0, 0, 1.0 };
-            const size_t vertex_count = count_numbers(linebuf);
-            if (vertex_count == 4) {
+            const size_t coordinate_count = count_numbers(linebuf);
+            if (coordinate_count == 4) {
                 sscanf(linebuf, "%*s %f %f %f %f\n",
                         &vertex[0],
                         &vertex[1],
@@ -112,7 +112,7 @@ size_t count_numbers(const char *line) {
     size_t count = 0;
     size_t i = 0;
     while (i < strlen(line) - 1) {
-        if (line[i] == ' ' && isdigit(line[i + 1])) {
+        if ((line[i] == ' ' || line[i] == '-') && isdigit(line[i + 1])) {
             count++;
         }
         i++;
