@@ -1,8 +1,10 @@
 CC = clang
 LIB_DIR = lib
 OBJ_DIR = obj
+PREFIX = /usr
+INCLUDE_DIR = include
 
-.PHONY: clean
+.PHONY: clean install
 
 all: $(LIB_DIR)/libwavefront.a
 
@@ -16,3 +18,8 @@ $(OBJ_DIR)/%.o: %.c %.h
 
 clean:
 	rm -rf $(LIB_DIR) $(OBJ_DIR)
+
+install: all
+	cp -n $(LIB_DIR)/libwavefront.a $(PREFIX)/lib/libwavefront.a
+	@mkdir $(PREFIX)/include/wavefront/
+	cp -n $(INCLUDE_DIR)/wavefront.h $(PREFIX)/include/wavefront/wavefront.h
