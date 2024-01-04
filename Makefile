@@ -4,9 +4,11 @@ OBJ_DIR = obj
 
 .PHONY: clean
 
-$(LIB_DIR)/libwavefront.a: $(OBJ_DIR)/wavefront.o
+all: $(LIB_DIR)/libwavefront.a
+
+$(LIB_DIR)/lib%.a: $(OBJ_DIR)/%.o
 	@mkdir -p $(@D)
-	ar -rcs $(@D)/libwavefront.a $(OBJ_DIR)/wavefront.o
+	ar -rcs $@ $<
 
 $(OBJ_DIR)/%.o: %.c %.h
 	@mkdir -p $(@D)
