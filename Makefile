@@ -10,9 +10,11 @@ SRC_DIR = src
 
 all: $(LIB_DIR)/libwavefront.a
 
-$(LIB_DIR)/lib%.a: $(OBJ_DIR)/%.o
+objects = $(patsubst %.c,%.o,$(notdir $(wildcard $(SRC_DIR)/*.c)))
+
+$(LIB_DIR)/libwavefront.a: $(addprefix $(OBJ_DIR)/,$(objects))
 	@mkdir -p $(@D)
-	ar -rcs $@ $<
+	ar -rcs $@ $^
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(INCLUDE_DIR)/%.h
 	@mkdir -p $(@D)
