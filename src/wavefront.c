@@ -23,14 +23,25 @@ size_t trim_comment(char *line);
  *
  * Returns number of vertices read.
  */
-size_t wavefront_fread(wavefront_geometry_t *geometry, FILE *restrict file, readmode_t mode) {
+size_t wavefront_fread(wavefront_geometry_t *geometry, FILE *restrict file) {
     const size_t LINEBUF_SIZE = 256;
     char *linebuf = (char *)malloc(LINEBUF_SIZE * sizeof(char));
-    const size_t vertices_count_to_alloc = mode == LARGE
-                ? LARGE_MESH_VERTEX_COUNT_DEFAULT
-                : MESH_VERTEX_COUNT_DEFAULT;
-    float *vertices = (float *)malloc(vertices_count_to_alloc * 4 * sizeof(float));
-    face_t *faces = (face_t *)malloc((vertices_count_to_alloc / 3) * sizeof(face_t));
+    size_t vertices_lookup = 0;
+    size_t faces_lookup = 0;
+    // Looking up for how much memory we should allocate to store
+    // all vertices/faces data.
+    while (!feof(file)) {
+        char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
+        if (starts_with(linebuf, "v ")) {
+            vertices_lookup++;
+        }
+        if (starts_with(linebuf, "f ")) {
+            faces_lookup++;
+        }
+    }
+    rewind(file);
+    float *vertices = (float *)malloc(vertices_lookup * 4 * sizeof(float));
+    face_t *faces = (face_t *)malloc(faces_lookup * sizeof(face_t));
     // TODO: rewrite to initially count number of vertex/face definition occurences
     // + add object division
     size_t vw = 0;
@@ -84,7 +95,8 @@ size_t wavefront_fread(wavefront_geometry_t *geometry, FILE *restrict file, read
 
     geometry->vertices = vertices;
     geometry->faces = faces;
-    geometry->vertices_count = vw / 4;
+    geometry->vertices_count = vertices_lookup;
+    geometry->faces_count = faces_lookup;
     return vw / 4;
 }
 
@@ -105,14 +117,6 @@ void wavefront_geometry_free(wavefront_geometry_t *geometry) {
         free(geometry->faces);
     }
     free(geometry);
-}
-
-size_t wavefront_fread_normal(wavefront_geometry_t *geometry, FILE *restrict file) {
-    return wavefront_fread(geometry, file, NORMAL);
-}
-
-size_t wavefront_fread_large(wavefront_geometry_t *geometry, FILE *restrict file) {
-    return wavefront_fread(geometry, file, LARGE);
 }
 
 // Trims comment in the given line (assumed that comment starts with COMMENT_MARKER).

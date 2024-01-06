@@ -7,6 +7,8 @@ size_t count_delimiters(const char *line, const char *delim);
 size_t count_words(const char *line);
 size_t count_numbers(const char *line);
 
+int starts_with(const char *line, const char *prefix);
+
 void trim_after(char *line, const char *trimmer);
 
 char *alloc_string(size_t len);

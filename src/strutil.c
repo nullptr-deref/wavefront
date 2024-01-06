@@ -1,5 +1,6 @@
 #include "./../include/strutil.h"
 
+#include <assert.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,4 +53,13 @@ size_t count_numbers(const char *line) {
         i++;
     }
     return count;
+}
+
+int starts_with(const char *line, const char *prefix) {
+    assert(strlen(prefix) <= strlen(line));
+    for (size_t i = 0; i < strlen(prefix); i++) {
+        if (line[i] != prefix[i])
+            return 0;
+    }
+    return 1;
 }
