@@ -7,38 +7,46 @@
 #include <stdlib.h>
 #include <string.h>
 
-str_split *str_split_empty() {
-    str_split *s = (str_split *)malloc(sizeof(str_split));
-    s->items = NULL;
-    s->len = 0;
-    s->cap = 0;
-    s->empty = 1;
-    return s;
-}
-
 str_split *str_split_init(size_t cap) {
     str_split *s = (str_split *)malloc(sizeof(str_split));
     s->items = (char **)malloc(cap * sizeof(char *));
+    for (size_t i = 0; i < cap; i++) {
+        // Nullifying for the sake of
+        // proper str_split_clear work.
+        s->items[i] = NULL;
+    }
     s->len = 0;
     s->cap = cap;
-    s->empty = 0;
     return s;
 }
 
 void str_split_free(str_split *ss) {
-    if (!ss->empty) {
-        if (ss->len > 0 && ss->items != NULL) {
-            for (size_t i = 0; i < ss->len; i++)
-                free(ss->items[i]);
-            free(ss->items);
-        }
-        free(ss);
+    if (ss->len > 0 && ss->items != NULL) {
+        for (size_t i = 0; i < ss->len; i++)
+            free(ss->items[i]);
+        free(ss->items);
     }
+    free(ss);
 }
 
 void str_split_append(str_split *ss, char *item) {
     assert(ss->len < ss->cap);
+    if (ss->items[ss->len] != NULL) {
+        const size_t old_len = strlen(ss->items[ss->len]);
+        const size_t new_len = strlen(item);
+        if (new_len > old_len) {
+            free(ss->items[ss->len]);
+        }
+        else {
+            memcpy(ss->items, item, new_len);
+            ss->items[new_len] = '\0';
+        }
+    }
     ss->items[ss->len++] = item;
+}
+
+void str_split_clear(str_split *ss) {
+    ss->len = 0;
 }
 
 // Splits given string into substrings.

@@ -7,11 +7,10 @@ typedef struct {
     char **items;
     size_t cap;
     size_t len;
-    int empty;
 } str_split;
 
-str_split *str_split_empty();
 str_split *str_split_init(size_t cap);
+void       str_split_clear(str_split *ss);
 void       str_split_free(str_split *ss);
 
 void       str_split_append(str_split *ss, char *item);

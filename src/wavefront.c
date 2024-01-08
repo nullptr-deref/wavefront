@@ -12,9 +12,6 @@ const char GEOMETRY_VERTEX_MARKER = 'v';
 const char GEOMETRY_FACE_MARKER = 'f';
 const char COMMENT_MARKER = '#';
 
-const size_t MESH_VERTEX_COUNT_DEFAULT = 4096;
-const size_t LARGE_MESH_VERTEX_COUNT_DEFAULT = 1000000;
-
 size_t trim_comment(char *line);
 
 /* Reads geometry vertices from .obj file and stores it into tightly packed array.
@@ -46,12 +43,16 @@ size_t wavefront_fread(wavefront_geometry_t *geometry, FILE *restrict file) {
     // + add object division
     size_t vw = 0;
     size_t fw = 0;
+
+    str_split *vertex = str_split_init(3);
+
     while (!feof(file)) {
         char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
         if (read_buf == NULL) continue;
         if (linebuf[0] == COMMENT_MARKER) continue;
         const size_t len = trim_comment(linebuf);
         trim_after(linebuf, "\r\n");
+
         if (linebuf[0] == GEOMETRY_VERTEX_MARKER && !isalpha(linebuf[1])) {
             // Now line looks like "v %f %f %f [%f]" and we can parse it with scanf easily.
             float vertex[4] = { 0, 0, 0, 1.0 };
@@ -70,6 +71,7 @@ size_t wavefront_fread(wavefront_geometry_t *geometry, FILE *restrict file) {
             memcpy(&vertices[vw], vertex, 4*sizeof(float));
             vw += 4;
         }
+
         if (linebuf[0] == GEOMETRY_FACE_MARKER) {
             face_t face;
             const size_t vertices_count = count_words(&linebuf[2]); // Discarding letter 'f' initially.
@@ -77,8 +79,9 @@ size_t wavefront_fread(wavefront_geometry_t *geometry, FILE *restrict file) {
             str_split *splitted = split(&linebuf[2], " ");
             for (size_t i = 0; i < splitted->len; i++) {
                 if (strlen(splitted->items[i]) == 0) continue;
-                str_split *vertex = split(splitted->items[i], "/");
                 for (size_t j = 0; j < vertex->len; j++) {
+                    str_split_clear(vertex);
+                    vertex = split(splitted->items[i], "/");
                     if (strlen(vertex->items[j]) == 0) {
                         face.vertices[i*3 + j] = 0;
                         continue;
