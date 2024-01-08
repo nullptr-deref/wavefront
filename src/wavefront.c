@@ -29,6 +29,7 @@ size_t wavefront_fread(wavefront_geometry_t *geometry, FILE *restrict file) {
     // all vertices/faces data.
     while (!feof(file)) {
         char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
+        if (strlen(linebuf) < 2) continue;
         if (starts_with(linebuf, "v ")) {
             vertices_lookup++;
         }
