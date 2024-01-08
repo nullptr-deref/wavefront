@@ -1,16 +1,19 @@
 CC = clang
 CFLAGS = -g
+BIN_DIR = bin
 LIB_DIR = lib
 OBJ_DIR = obj
 PREFIX = /usr
 INCLUDE_DIR = include
 SRC_DIR = src
+TESTS_DIR = tests
 
-.PHONY: clean install
+.PHONY: clean install tests
 
 all: $(LIB_DIR)/libwavefront.a
 
-objects = $(patsubst %.c,%.o,$(notdir $(wildcard $(SRC_DIR)/*.c)))
+objects := $(patsubst %.c,%.o,$(notdir $(wildcard $(SRC_DIR)/*.c)))
+tests := $(patsubst %.c,%,$(notdir $(wildcard $(TESTS_DIR)/*.c)))
 
 $(LIB_DIR)/libwavefront.a: $(addprefix $(OBJ_DIR)/,$(objects))
 	@mkdir -p $(@D)
@@ -20,8 +23,14 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(INCLUDE_DIR)/%.h
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+tests: $(addprefix $(BIN_DIR)/tests/,$(tests))
+
+$(BIN_DIR)/tests/%: $(TESTS_DIR)/%.c $(LIB_DIR)/libwavefront.a
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -o $@ -L$(LIB_DIR) $< $(addprefix -l,$(patsubst lib%.a,%,$(notdir $(filter %.a,$^))))
+
 clean:
-	rm -rf $(LIB_DIR) $(OBJ_DIR)
+	rm -rf $(LIB_DIR) $(OBJ_DIR) $(BIN_DIR)
 
 install: all
 	cp -n $(LIB_DIR)/libwavefront.a $(PREFIX)/lib/libwavefront.a
