@@ -89,13 +89,13 @@ size_t wavefront_fread(wavefront_geometry_t *geometry, FILE *restrict file) {
                     }
                     face.vertices[i*3 + j] = atoll(vertex->items[j]);
                 }
-                str_split_free(vertex);
             }
             faces[fw++] = face;
             str_split_free(splitted);
         }
     }
     free(linebuf);
+    str_split_free(vertex);
 
     geometry->vertices = vertices;
     geometry->faces = faces;
