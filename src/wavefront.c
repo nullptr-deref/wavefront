@@ -78,10 +78,8 @@ wavefront_geometry_t * wavefront_fread(FILE *restrict file) {
             str_split *splitted = split(&linebuf[2], " ");
             for (size_t i = 0; i < splitted->len; i++) {
                 if (strlen(splitted->items[i]) == 0) continue;
-                for (size_t j = 0; j < vertex->len; j++) {
-                    str_split_clear(vertex);
-                    vertex = split(splitted->items[i], "/");
-                    if (strlen(vertex->items[j]) == 0) {
+                str_split_clear(face_vertex);
+                split_no_alloc(face_vertex, splitted->items[i], "/");
                 for (size_t j = 0; j < face_vertex->len; j++) {
                     if (strlen(face_vertex->items[j]) == 0) {
                         face.vertices[i*3 + j] = 0;

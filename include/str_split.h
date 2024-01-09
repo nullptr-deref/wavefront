@@ -16,5 +16,6 @@ void       str_split_free(str_split *ss);
 void       str_split_append(str_split *ss, char *item);
 
 str_split *split(const char *line, const char *sep);
+void split_no_alloc(str_split *ss, const char *line, const char *sep);
 
 #endif

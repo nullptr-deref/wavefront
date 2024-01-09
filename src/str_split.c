@@ -21,27 +21,17 @@ str_split *str_split_init(size_t cap) {
 }
 
 void str_split_free(str_split *ss) {
-    if (ss->len > 0 && ss->items != NULL) {
-        for (size_t i = 0; i < ss->len; i++)
+    for (size_t i = 0; i < ss->cap; i++) {
+        if (ss->items[i] != NULL) {
             free(ss->items[i]);
-        free(ss->items);
+        }
     }
+    free(ss->items);
     free(ss);
 }
 
 void str_split_append(str_split *ss, char *item) {
     assert(ss->len < ss->cap);
-    if (ss->items[ss->len] != NULL) {
-        const size_t old_len = strlen(ss->items[ss->len]);
-        const size_t new_len = strlen(item);
-        if (new_len > old_len) {
-            free(ss->items[ss->len]);
-        }
-        else {
-            memcpy(ss->items, item, new_len);
-            ss->items[new_len] = '\0';
-        }
-    }
     ss->items[ss->len++] = item;
 }
 
@@ -76,4 +66,40 @@ str_split *split(const char *line, const char *sep) {
         // start += skip;
     }
     return ss;
+}
+
+// Puts values into previously cleared string split object.
+// Supposes that string split object was cleared via str_split_clear() beforehand.
+void split_no_alloc(str_split *ss, const char *line, const char *sep) {
+    assert(ss->len == 0);
+    const size_t delim_count = count_delimiters(line, sep);
+    if (delim_count == 0) {
+        char *copy = alloc_string(strlen(line));
+        str_split_append(ss, copy);
+        return;
+    }
+    const size_t words_count = delim_count + 1;
+    const char *start = line;
+    for (size_t i = 0; i < words_count; i++) {
+        const size_t chunk_len = strcspn(start, sep);
+        if (ss->items[ss->len] != NULL) {
+            const size_t old_len = strlen(ss->items[ss->len]);
+            if (chunk_len >= old_len) {
+                free(ss->items[ss->len]);
+                ss->items[ss->len] = alloc_string_or_empty(chunk_len);
+                memcpy(ss->items[ss->len], start, chunk_len);
+                ss->len++;
+            }
+            else {
+                memcpy(ss->items[ss->len], start, chunk_len);
+                ss->items[ss->len][chunk_len] = '\0';
+                ss->len++;
+            }
+        }
+        start += chunk_len + 1;
+        // If we replace the line above with the following 2 lines, then all empty
+        // substrings are placed at the end of the list.
+        // const size_t skip = strspn(start, sep);
+        // start += skip;
+    }
 }
