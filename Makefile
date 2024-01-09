@@ -10,7 +10,7 @@ TESTS_DIR = tests
 
 .PHONY: clean install tests
 
-all: $(LIB_DIR)/libwavefront.a
+all: $(LIB_DIR)/libwavefront.a tests
 
 objects := $(patsubst %.c,%.o,$(notdir $(wildcard $(SRC_DIR)/*.c)))
 tests := $(patsubst %.c,%,$(notdir $(wildcard $(TESTS_DIR)/*.c)))
