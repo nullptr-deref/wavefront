@@ -20,7 +20,8 @@ size_t trim_comment(char *line);
  *
  * Returns number of vertices read.
  */
-size_t wavefront_fread(wavefront_geometry_t *geometry, FILE *restrict file) {
+wavefront_geometry_t * wavefront_fread(FILE *restrict file) {
+    wavefront_geometry_t *g = wavefront_geometry_init();
     const size_t LINEBUF_SIZE = 256;
     char *linebuf = (char *)malloc(LINEBUF_SIZE * sizeof(char));
     size_t vertices_lookup = 0;
@@ -38,14 +39,12 @@ size_t wavefront_fread(wavefront_geometry_t *geometry, FILE *restrict file) {
         }
     }
     rewind(file);
-    float *vertices = (float *)malloc(vertices_lookup * 4 * sizeof(float));
-    face_t *faces = (face_t *)malloc(faces_lookup * sizeof(face_t));
-    // TODO: rewrite to initially count number of vertex/face definition occurences
-    // + add object division
+    g->vertices = (float *)malloc(vertices_lookup * 4 * sizeof(float));
+    g->faces = (face_t *)malloc(faces_lookup * sizeof(face_t));
     size_t vw = 0;
     size_t fw = 0;
 
-    str_split *vertex = str_split_init(3);
+    str_split *face_vertex = str_split_init(3);
 
     while (!feof(file)) {
         char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
@@ -68,8 +67,7 @@ size_t wavefront_fread(wavefront_geometry_t *geometry, FILE *restrict file) {
             else {
                 sscanf(linebuf, "%*s %f %f %f\n", &vertex[0], &vertex[1], &vertex[2]);
             }
-            // TODO: handle insufficient memory for holding geometry data (add check if some kind of realloc is needed).
-            memcpy(&vertices[vw], vertex, 4*sizeof(float));
+            memcpy(&g->vertices[vw], vertex, 4*sizeof(float));
             vw += 4;
         }
 
@@ -84,24 +82,24 @@ size_t wavefront_fread(wavefront_geometry_t *geometry, FILE *restrict file) {
                     str_split_clear(vertex);
                     vertex = split(splitted->items[i], "/");
                     if (strlen(vertex->items[j]) == 0) {
+                for (size_t j = 0; j < face_vertex->len; j++) {
+                    if (strlen(face_vertex->items[j]) == 0) {
                         face.vertices[i*3 + j] = 0;
                         continue;
                     }
-                    face.vertices[i*3 + j] = atoll(vertex->items[j]);
+                    face.vertices[i*3 + j] = atoll(face_vertex->items[j]);
                 }
             }
-            faces[fw++] = face;
+            g->faces[fw++] = face;
             str_split_free(splitted);
         }
     }
     free(linebuf);
-    str_split_free(vertex);
+    str_split_free(face_vertex);
 
-    geometry->vertices = vertices;
-    geometry->faces = faces;
-    geometry->vertices_count = vertices_lookup;
-    geometry->faces_count = faces_lookup;
-    return vw / 4;
+    g->vertices_count = vertices_lookup;
+    g->faces_count = faces_lookup;
+    return g;
 }
 
 wavefront_geometry_t *wavefront_geometry_init() {
