@@ -31,15 +31,18 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
     // all vertices/faces data.
     while (!feof(file)) {
         char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
-        if (strlen(linebuf) < 2) continue;
-        if (starts_with(linebuf, "v ")) {
-            vertices_lookup++;
-        }
-        if (starts_with(linebuf, "f ")) {
-            faces_lookup++;
+        trim_after(linebuf, "\r\n");
+        if (strlen(linebuf) > 2) {
+            if (starts_with(linebuf, "v ")) {
+                vertices_lookup++;
+            }
+            if (starts_with(linebuf, "f ")) {
+                faces_lookup++;
+            }
         }
     }
     rewind(file);
+
     g->vertices = (float *)malloc(vertices_lookup * 4 * sizeof(float));
     g->faces = (Face *)malloc(faces_lookup * sizeof(Face));
     size_t vw = 0;
@@ -50,43 +53,44 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
     while (!feof(file)) {
         char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
         if (read_buf == NULL) continue;
-        if (linebuf[0] == COMMENT_MARKER) continue;
-        const size_t len = trim_comment(linebuf);
         trim_after(linebuf, "\r\n");
+        const size_t new_len = trim_comment(linebuf);
+        if (new_len < 2) continue;
 
-        if (linebuf[0] == GEOMETRY_VERTEX_MARKER && !isalpha(linebuf[1])) {
+        if (starts_with(linebuf, "v ")) {
             // Now line looks like "v %f %f %f [%f]" and we can parse it with scanf easily.
             float vertex[4] = { 0, 0, 0, 1.0 };
             const size_t coordinate_count = count_numbers(linebuf);
             if (coordinate_count == 4) {
-                sscanf(linebuf, "%*s %f %f %f %f\n",
+                sscanf(linebuf, "%*s %f %f %f %f",
                         &vertex[0],
                         &vertex[1],
                         &vertex[2],
                         &vertex[3]);
             }
             else {
-                sscanf(linebuf, "%*s %f %f %f\n", &vertex[0], &vertex[1], &vertex[2]);
+                sscanf(linebuf, "%*s %f %f %f", &vertex[0], &vertex[1], &vertex[2]);
             }
             memcpy(&g->vertices[vw], vertex, 4*sizeof(float));
             vw += 4;
         }
 
-        if (linebuf[0] == GEOMETRY_FACE_MARKER) {
+        if (starts_with(linebuf, "f ")) {
             Face face;
             const size_t vertices_count = count_words(&linebuf[2]); // Discarding letter 'f' initially.
             face.vertices = (idx_t *)malloc(vertices_count * 3 * sizeof(idx_t));
             StrSplit *splitted = split(&linebuf[2], " ");
             for (size_t i = 0; i < splitted->len; i++) {
-                if (strlen(splitted->items[i]) == 0) continue;
-                str_split_clear(face_vertex);
-                split_no_alloc(face_vertex, splitted->items[i], "/");
-                for (size_t j = 0; j < face_vertex->len; j++) {
-                    if (strlen(face_vertex->items[j]) == 0) {
-                        face.vertices[i*3 + j] = 0;
-                        continue;
+                if (strlen(splitted->items[i]) != 0) {
+                    str_split_clear(face_vertex);
+                    split_no_alloc(face_vertex, splitted->items[i], "/");
+                    for (size_t j = 0; j < face_vertex->len; j++) {
+                        if (strlen(face_vertex->items[j]) == 0) {
+                            face.vertices[i*3 + j] = 0;
+                            continue;
+                        }
+                        face.vertices[i*3 + j] = atoll(face_vertex->items[j]);
                     }
-                    face.vertices[i*3 + j] = atoll(face_vertex->items[j]);
                 }
             }
             g->faces[fw++] = face;
@@ -102,11 +106,12 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
 }
 
 WavefrontGeometry *wavefront_geometry_init() {
-    return (WavefrontGeometry *)malloc(sizeof(WavefrontGeometry));
+    WavefrontGeometry *g = (WavefrontGeometry *)malloc(sizeof(WavefrontGeometry));
+    g->vertices = NULL;
+    g->faces = NULL;
+    return g;
 }
 
-// Used to properly delete Wavefront geometry object allocated manually or
-// using wavefront_geometry_init(...).
 void wavefront_geometry_free(WavefrontGeometry *geometry) {
     if (geometry->vertices != NULL) {
         free(geometry->vertices);
