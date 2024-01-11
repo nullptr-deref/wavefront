@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-str_split *str_split_init(size_t cap) {
-    str_split *s = (str_split *)malloc(sizeof(str_split));
+StrSplit *str_split_init(size_t cap) {
+    StrSplit *s = (StrSplit *)malloc(sizeof(StrSplit));
     s->items = (char **)malloc(cap * sizeof(char *));
     for (size_t i = 0; i < cap; i++) {
         // Nullifying for the sake of
@@ -20,7 +20,7 @@ str_split *str_split_init(size_t cap) {
     return s;
 }
 
-void str_split_free(str_split *ss) {
+void str_split_free(StrSplit *ss) {
     for (size_t i = 0; i < ss->cap; i++) {
         if (ss->items[i] != NULL) {
             free(ss->items[i]);
@@ -30,22 +30,22 @@ void str_split_free(str_split *ss) {
     free(ss);
 }
 
-void str_split_append(str_split *ss, char *item) {
+void str_split_append(StrSplit *ss, char *item) {
     assert(ss->len < ss->cap);
     ss->items[ss->len++] = item;
 }
 
-void str_split_clear(str_split *ss) {
+void str_split_clear(StrSplit *ss) {
     ss->len = 0;
 }
 
 // Splits given string into substrings.
-// Return str_split with unmodified string if no
+// Return StrSplit with unmodified string if no
 // separators were found.
-str_split *split(const char *line, const char *sep) {
+StrSplit *split(const char *line, const char *sep) {
     const size_t delim_count = count_delimiters(line, sep);
     if (delim_count == 0) {
-        str_split *ss_single = str_split_init(1);
+        StrSplit *ss_single = str_split_init(1);
         char *copy = alloc_string(strlen(line));
         strcpy(copy, line);
         str_split_append(ss_single, copy);
@@ -53,7 +53,7 @@ str_split *split(const char *line, const char *sep) {
     }
     const size_t words_count = delim_count + 1;
     const char *start = line;
-    str_split *ss = str_split_init(words_count);
+    StrSplit *ss = str_split_init(words_count);
     for (size_t i = 0; i < words_count; i++) {
         size_t chunk_len = strcspn(start, sep);
         char *new_item = alloc_string_or_empty(chunk_len);
@@ -70,7 +70,7 @@ str_split *split(const char *line, const char *sep) {
 
 // Puts values into previously cleared string split object.
 // Supposes that string split object was cleared via str_split_clear() beforehand.
-void split_no_alloc(str_split *ss, const char *line, const char *sep) {
+void split_no_alloc(StrSplit *ss, const char *line, const char *sep) {
     assert(ss->len == 0);
     const size_t delim_count = count_delimiters(line, sep);
     if (delim_count == 0) {

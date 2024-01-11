@@ -20,10 +20,11 @@ size_t trim_comment(char *line);
  *
  * Returns number of vertices read.
  */
-wavefront_geometry_t * wavefront_fread(FILE *restrict file) {
-    wavefront_geometry_t *g = wavefront_geometry_init();
+WavefrontGeometry *wavefront_fread(FILE *restrict file) {
     const size_t LINEBUF_SIZE = 256;
     char *linebuf = (char *)malloc(LINEBUF_SIZE * sizeof(char));
+
+    WavefrontGeometry *g = wavefront_geometry_init();
     size_t vertices_lookup = 0;
     size_t faces_lookup = 0;
     // Looking up for how much memory we should allocate to store
@@ -40,11 +41,11 @@ wavefront_geometry_t * wavefront_fread(FILE *restrict file) {
     }
     rewind(file);
     g->vertices = (float *)malloc(vertices_lookup * 4 * sizeof(float));
-    g->faces = (face_t *)malloc(faces_lookup * sizeof(face_t));
+    g->faces = (Face *)malloc(faces_lookup * sizeof(Face));
     size_t vw = 0;
     size_t fw = 0;
 
-    str_split *face_vertex = str_split_init(3);
+    StrSplit *face_vertex = str_split_init(3);
 
     while (!feof(file)) {
         char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
@@ -72,10 +73,10 @@ wavefront_geometry_t * wavefront_fread(FILE *restrict file) {
         }
 
         if (linebuf[0] == GEOMETRY_FACE_MARKER) {
-            face_t face;
+            Face face;
             const size_t vertices_count = count_words(&linebuf[2]); // Discarding letter 'f' initially.
             face.vertices = (idx_t *)malloc(vertices_count * 3 * sizeof(idx_t));
-            str_split *splitted = split(&linebuf[2], " ");
+            StrSplit *splitted = split(&linebuf[2], " ");
             for (size_t i = 0; i < splitted->len; i++) {
                 if (strlen(splitted->items[i]) == 0) continue;
                 str_split_clear(face_vertex);
@@ -100,13 +101,13 @@ wavefront_geometry_t * wavefront_fread(FILE *restrict file) {
     return g;
 }
 
-wavefront_geometry_t *wavefront_geometry_init() {
-    return (wavefront_geometry_t *)malloc(sizeof(wavefront_geometry_t));
+WavefrontGeometry *wavefront_geometry_init() {
+    return (WavefrontGeometry *)malloc(sizeof(WavefrontGeometry));
 }
 
 // Used to properly delete Wavefront geometry object allocated manually or
 // using wavefront_geometry_init(...).
-void wavefront_geometry_free(wavefront_geometry_t *geometry) {
+void wavefront_geometry_free(WavefrontGeometry *geometry) {
     if (geometry->vertices != NULL) {
         free(geometry->vertices);
     }

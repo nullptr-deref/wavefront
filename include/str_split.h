@@ -7,15 +7,15 @@ typedef struct {
     char **items;
     size_t cap;
     size_t len;
-} str_split;
+} StrSplit;
 
-str_split *str_split_init(size_t cap);
-void       str_split_clear(str_split *ss);
-void       str_split_free(str_split *ss);
+StrSplit  *str_split_init(size_t cap);
+void       str_split_clear(StrSplit *ss);
+void       str_split_free(StrSplit *ss);
 
-void       str_split_append(str_split *ss, char *item);
+void       str_split_append(StrSplit *ss, char *item);
 
-str_split *split(const char *line, const char *sep);
-void split_no_alloc(str_split *ss, const char *line, const char *sep);
+StrSplit *split(const char *line, const char *sep);
+void split_no_alloc(StrSplit *ss, const char *line, const char *sep);
 
 #endif
