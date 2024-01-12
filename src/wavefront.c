@@ -92,6 +92,7 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
             Face face;
             const size_t vertices_count = count_words(&linebuf[2]); // Discarding letter 'f' initially.
             face.vertices_data = (idx_t *)malloc(vertices_count * 3 * sizeof(idx_t));
+            face.vertices_count = vertices_count;
             StrSplit *splitted = split(&linebuf[2], " ");
             for (size_t i = 0; i < splitted->len; i++) {
                 if (strlen(splitted->items[i]) != 0) {
