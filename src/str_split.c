@@ -88,13 +88,12 @@ void split_no_alloc(StrSplit *ss, const char *line, const char *sep) {
                 free(ss->items[ss->len]);
                 ss->items[ss->len] = alloc_string_or_empty(chunk_len);
                 memcpy(ss->items[ss->len], start, chunk_len);
-                ss->len++;
             }
             else {
                 memcpy(ss->items[ss->len], start, chunk_len);
                 ss->items[ss->len][chunk_len] = '\0';
-                ss->len++;
             }
+            ss->len++;
         }
         start += chunk_len + 1;
         // If we replace the line above with the following 2 lines, then all empty

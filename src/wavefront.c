@@ -59,7 +59,7 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
     size_t vw = 0;
     size_t fw = 0;
 
-    StrSplit *face_vertex = str_split_init(3);
+    StrSplit *face_vertex = NULL;
 
     // Actual parsing
     while (!feof(file)) {
@@ -96,8 +96,13 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
             StrSplit *splitted = split(&linebuf[2], " ");
             for (size_t i = 0; i < splitted->len; i++) {
                 if (strlen(splitted->items[i]) != 0) {
-                    str_split_clear(face_vertex);
-                    split_no_alloc(face_vertex, splitted->items[i], "/");
+                    if (face_vertex == NULL) {
+                        face_vertex = split(splitted->items[i], "/");
+                    }
+                    else {
+                        str_split_clear(face_vertex);
+                        split_no_alloc(face_vertex, splitted->items[i], "/");
+                    }
                     for (size_t j = 0; j < face_vertex->len; j++) {
                         if (strlen(face_vertex->items[j]) == 0) {
                             face.vertices_data[i*3 + j] = 0;
