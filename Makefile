@@ -39,9 +39,9 @@ clean:
 	rm -rf $(LIB_DIR) $(OBJ_DIR) $(BIN_DIR)
 
 install: all
-	cp -n $(LIB_DIR)/libwavefront.a $(PREFIX)/lib/libwavefront.a
+	cp -u $(LIB_DIR)/libwavefront.a $(PREFIX)/lib/libwavefront.a
 	@mkdir -p $(PREFIX)/include/wavefront/
-	cp -n $(INCLUDE_DIR)/*.h $(PREFIX)/include/wavefront/
+	cp -u $(INCLUDE_DIR)/*.h $(PREFIX)/include/wavefront/
 
 uninstall:
 	rm $(PREFIX)/lib/libwavefront.a
