@@ -23,6 +23,16 @@ void trim_after(char *line, const char *trimmer) {
     }
 }
 
+void trim_trailing_spaces(char *line) {
+    const size_t len = strlen(line);
+    for (size_t i = len - 1; i > 0; i--) {
+        if (isspace(line[i]) && !isspace(line[i-1])) {
+            line[i] = '\0';
+            return;
+        }
+    }
+}
+
 char *alloc_string(size_t len) {
     char *mem = (char *)malloc((1 + len) * sizeof(char));
     mem[len] = '\0';

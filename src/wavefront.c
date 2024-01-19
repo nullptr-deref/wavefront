@@ -66,6 +66,7 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
         char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
         if (read_buf == NULL) continue;
         trim_after(linebuf, "\r\n");
+        trim_trailing_spaces(linebuf);
         const size_t new_len = trim_comment(linebuf);
         if (new_len < 2) continue;
 
@@ -95,7 +96,7 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
             face.vertices_count = vertices_count;
             StrSplit *splitted = split(&linebuf[2], " ");
             for (size_t i = 0; i < splitted->len; i++) {
-                if (strlen(splitted->items[i]) != 0) {
+                if (strlen(splitted->items[i]) >= 1) {
                     if (face_vertex == NULL) {
                         face_vertex = split(splitted->items[i], "/");
                     }
