@@ -6,6 +6,7 @@
 #include <string.h>
 
 size_t count_delimiters(const char *line, const char *delim) {
+    assert(strlen(line) > 0);
     size_t count = 0;
     for (size_t i = 0; i < strlen(line); i++) {
         for (size_t j = 0; j < strlen(delim); j++) {
@@ -17,18 +18,24 @@ size_t count_delimiters(const char *line, const char *delim) {
 }
 
 void trim_after(char *line, const char *trimmer) {
-    char *found = strpbrk(line, trimmer);
-    if (found != NULL) {
-        *found = '\0';
+    if (strlen(line) > 0) {
+        char *found = strpbrk(line, trimmer);
+        if (found != NULL) {
+            *found = '\0';
+        }
     }
 }
 
 void trim_trailing_spaces(char *line) {
-    const size_t len = strlen(line);
-    for (size_t i = len - 1; i > 0; i--) {
-        if (isspace(line[i]) && !isspace(line[i-1])) {
-            line[i] = '\0';
-            return;
+    if (strlen(line) > 0) {
+        const size_t len = strlen(line);
+        if (isspace(line[len-1])) {
+            for (size_t i = len - 1; i > 0; i--) {
+                if (isspace(line[i]) && !isspace(line[i-1])) {
+                    line[i] = '\0';
+                    return;
+                }
+            }
         }
     }
 }

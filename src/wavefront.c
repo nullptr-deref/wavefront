@@ -65,10 +65,10 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
     while (!feof(file)) {
         char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
         if (read_buf == NULL) continue;
+        const size_t new_len = trim_comment(linebuf);
         trim_after(linebuf, "\r\n");
         trim_trailing_spaces(linebuf);
-        const size_t new_len = trim_comment(linebuf);
-        if (new_len < 2) continue;
+        if (strlen(linebuf) < 2) continue;
 
         if (starts_with(linebuf, "v ")) {
             // Now line looks like "v %f %f %f [%f]" and we can parse it with scanf easily.
