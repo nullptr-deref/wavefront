@@ -25,10 +25,10 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
     char *linebuf = (char *)malloc(LINEBUF_SIZE * sizeof(char));
 
     WavefrontGeometry *g = wavefront_geometry_init();
-    size_t vertices_lookup = 0;
-    size_t faces_lookup = 0;
+    size_t vertices_total_count = 0;
+    size_t faces_total_count = 0;
 
-    size_t objects_lookup = 0;
+    size_t objects_total_count = 0;
     size_t current_obj_id = 0;
     size_t current_vertex_offset = 0;
     size_t prev_vertex_offset = 0;
@@ -39,22 +39,22 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
         trim_after(linebuf, "\r\n");
         if (strlen(linebuf) > 2) {
             if (starts_with(linebuf, "v ")) {
-                vertices_lookup++;
+                vertices_total_count++;
             }
             if (starts_with(linebuf, "f ")) {
-                faces_lookup++;
+                faces_total_count++;
             }
             if (starts_with(linebuf, "o ")) {
-                objects_lookup++;
+                objects_total_count++;
             }
         }
     }
     rewind(file);
 
     // TODO: safety check to protect against allocating 0 memory.
-    g->vertices = (float *)malloc(vertices_lookup * 4 * sizeof(float));
-    g->faces = (Face *)malloc(faces_lookup * sizeof(Face));
-    g->objects = objects_lookup > 0 ? (Object *)malloc(objects_lookup * sizeof(Object))
+    g->vertices = (float *)malloc(vertices_total_count * 4 * sizeof(float));
+    g->faces = (Face *)malloc(faces_total_count * sizeof(Face));
+    g->objects = objects_total_count > 0 ? (Object *)malloc(objects_total_count * sizeof(Object))
                                     : NULL;
     size_t vw = 0;
     size_t fw = 0;
@@ -128,8 +128,8 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
             if (current_obj_id != 0) {
                 g->objects[current_obj_id - 1].owned_vertices.len = current_vertex_offset - prev_vertex_offset;
             }
-            if (current_obj_id == objects_lookup - 1) {
-                g->objects[current_obj_id].owned_vertices.len = vertices_lookup - current_vertex_offset;
+            if (current_obj_id == objects_total_count - 1) {
+                g->objects[current_obj_id].owned_vertices.len = vertices_total_count - current_vertex_offset;
             }
             prev_vertex_offset = current_vertex_offset;
             current_obj_id++;
@@ -138,9 +138,9 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
     free(linebuf);
     str_split_free(face_vertex);
 
-    g->vertices_count = vertices_lookup;
-    g->faces_count = faces_lookup;
-    g->objects_count = objects_lookup;
+    g->vertices_count = vertices_total_count;
+    g->faces_count = faces_total_count;
+    g->objects_count = objects_total_count;
     return g;
 }
 
