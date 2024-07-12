@@ -30,13 +30,14 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
 
     size_t objects_total_count = 0;
     size_t current_obj_id = 0;
-    size_t current_vertex_offset = 0;
-    size_t prev_vertex_offset = 0;
+    size_t current_face_offset = 0;
+    size_t prev_face_offset = 0;
     // Looking up for how much memory we should allocate to store
     // all vertices/faces data.
     while (!feof(file)) {
         char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
         trim_after(linebuf, "\r\n");
+        linebuf = first_nonspace(linebuf); // trimming tabs/spaces/etc at the start of the line (affects further parsing).
         if (strlen(linebuf) > 2) {
             if (starts_with(linebuf, "v ")) {
                 vertices_total_count++;
@@ -51,11 +52,15 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
     }
     rewind(file);
 
-    // TODO: safety check to protect against allocating 0 memory.
+    g->objects = objects_total_count > 0
+        ? (Object *)malloc(objects_total_count * sizeof(Object))
+        : NULL;
+    g->objects_count = objects_total_count;
+
+    // TODO: safety check to protect against allocating 0 memory for vertices/faces.
     g->vertices = (float *)malloc(vertices_total_count * 4 * sizeof(float));
     g->faces = (Face *)malloc(faces_total_count * sizeof(Face));
-    g->objects = objects_total_count > 0 ? (Object *)malloc(objects_total_count * sizeof(Object))
-                                    : NULL;
+
     size_t vw = 0;
     size_t fw = 0;
 
@@ -86,7 +91,6 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
             }
             memcpy(&g->vertices[vw], vertex, 4*sizeof(float));
             vw += 4;
-            current_vertex_offset++;
         }
 
         if (starts_with(linebuf, "f ")) {
@@ -113,6 +117,7 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
                 }
             }
             g->faces[fw++] = face;
+            current_face_offset++;
             str_split_free(splitted);
         }
 
@@ -122,16 +127,14 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
             g->objects[current_obj_id].name = alloc_string(name_len);
             memcpy(g->objects[current_obj_id].name, &linebuf[name_beginning], name_len);
             g->objects[current_obj_id].id = current_obj_id;
-            g->objects[current_obj_id].group_count = 0;
-            g->objects[current_obj_id].owned_vertices.offset = current_vertex_offset;
-            g->objects[current_obj_id].groups = NULL;
+            g->objects[current_obj_id].owned_faces.offset = current_face_offset;
             if (current_obj_id != 0) {
-                g->objects[current_obj_id - 1].owned_vertices.len = current_vertex_offset - prev_vertex_offset;
+                g->objects[current_obj_id - 1].owned_faces.len = current_face_offset - prev_face_offset;
             }
             if (current_obj_id == objects_total_count - 1) {
-                g->objects[current_obj_id].owned_vertices.len = vertices_total_count - current_vertex_offset;
+                g->objects[current_obj_id].owned_faces.len = faces_total_count - current_face_offset;
             }
-            prev_vertex_offset = current_vertex_offset;
+            prev_face_offset = current_face_offset;
             current_obj_id++;
         }
     }
@@ -140,7 +143,6 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
 
     g->vertices_count = vertices_total_count;
     g->faces_count = faces_total_count;
-    g->objects_count = objects_total_count;
     return g;
 }
 

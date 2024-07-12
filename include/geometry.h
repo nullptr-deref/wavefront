@@ -13,18 +13,26 @@ typedef struct {
     size_t  vertices_count;
 } Face;
 
+/* 
+ * Group is a polygonal and free-form geometry statement.
+ * Specifies the group name for the elements that follow it.
+ */
 typedef struct {
-    char          *name;
-    wavefront_id_t id;
-    Range          polygons;
+    wavefront_id_t  id;
+    char           *name;
+    Range           polygons;
 } Group;
 
+/*
+ * Object is a polygonal and free-form geometry statement.
+ * It is optional; provides the object name for the geometry elements
+ * that follow it.
+ * Has no default name.
+ */
 typedef struct {
     wavefront_id_t id;
     char          *name;
-    Group         *groups;
-    size_t         group_count;
-    Range          owned_vertices;
+    Range          owned_faces;
 } Object;
 
 typedef struct {
