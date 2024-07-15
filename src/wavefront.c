@@ -36,16 +36,16 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
     // all vertices/faces data.
     while (!feof(file)) {
         char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
-        trim_after(linebuf, "\r\n");
-        linebuf = first_nonspace(linebuf); // trimming tabs/spaces/etc at the start of the line (affects further parsing).
-        if (strlen(linebuf) > 2) {
-            if (starts_with(linebuf, "v ")) {
+        trim_after(read_buf, "\r\n");
+        read_buf = first_nonspace(read_buf); // trimming tabs/spaces/etc at the start of the line (affects further parsing).
+        if (strlen(read_buf) > 2) {
+            if (starts_with(read_buf, "v ")) {
                 vertices_total_count++;
             }
-            if (starts_with(linebuf, "f ")) {
+            if (starts_with(read_buf, "f ")) {
                 faces_total_count++;
             }
-            if (starts_with(linebuf, "o ")) {
+            if (starts_with(read_buf, "o ")) {
                 objects_total_count++;
             }
         }
@@ -70,35 +70,36 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
     while (!feof(file)) {
         char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
         if (read_buf == NULL) continue;
-        const size_t new_len = trim_comment(linebuf);
-        trim_after(linebuf, "\r\n");
-        trim_trailing_spaces(linebuf);
-        if (strlen(linebuf) < 2) continue;
+        const size_t new_len = trim_comment(read_buf);
+        trim_after(read_buf, "\r\n");
+        trim_trailing_spaces(read_buf);
+        read_buf = first_nonspace(read_buf); // trimming tabs/spaces/etc at the start of the line (affects further parsing).
+        if (strlen(read_buf) < 2) continue;
 
-        if (starts_with(linebuf, "v ")) {
+        if (starts_with(read_buf, "v ")) {
             // Now line looks like "v %f %f %f [%f]" and we can parse it with scanf easily.
             float vertex[4] = { 0, 0, 0, 1.0 };
-            const size_t coordinate_count = count_numbers(linebuf);
+            const size_t coordinate_count = count_numbers(read_buf);
             if (coordinate_count == 4) {
-                sscanf(linebuf, "%*s %f %f %f %f",
+                sscanf(read_buf, "%*s %f %f %f %f",
                         &vertex[0],
                         &vertex[1],
                         &vertex[2],
                         &vertex[3]);
             }
             else {
-                sscanf(linebuf, "%*s %f %f %f", &vertex[0], &vertex[1], &vertex[2]);
+                sscanf(read_buf, "%*s %f %f %f", &vertex[0], &vertex[1], &vertex[2]);
             }
             memcpy(&g->vertices[vw], vertex, 4*sizeof(float));
             vw += 4;
         }
 
-        if (starts_with(linebuf, "f ")) {
+        if (starts_with(read_buf, "f ")) {
             Face face;
-            const size_t vertices_count = count_words(&linebuf[2]); // Discarding letter 'f' initially.
+            const size_t vertices_count = count_words(&read_buf[2]); // Discarding letter 'f' initially.
             face.vertices_data = (idx_t *)malloc(vertices_count * 3 * sizeof(idx_t));
             face.vertices_count = vertices_count;
-            StrSplit *splitted = split(&linebuf[2], " ");
+            StrSplit *splitted = split(&read_buf[2], " ");
             for (size_t i = 0; i < splitted->len; i++) {
                 if (strlen(splitted->items[i]) >= 1) {
                     if (face_vertex == NULL) {
@@ -121,11 +122,11 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
             str_split_free(splitted);
         }
 
-        if (starts_with(linebuf, "o ")) {
-            const size_t name_beginning = 2 + strspn(&linebuf[2], " ");
-            const size_t name_len = strlen(&linebuf[name_beginning]);
+        if (starts_with(read_buf, "o ")) {
+            const size_t name_beginning = 2 + strspn(&read_buf[2], " ");
+            const size_t name_len = strlen(&read_buf[name_beginning]);
             g->objects[current_obj_id].name = alloc_string(name_len);
-            memcpy(g->objects[current_obj_id].name, &linebuf[name_beginning], name_len);
+            memcpy(g->objects[current_obj_id].name, &read_buf[name_beginning], name_len);
             g->objects[current_obj_id].id = current_obj_id;
             g->objects[current_obj_id].owned_faces.offset = current_face_offset;
             if (current_obj_id != 0) {
