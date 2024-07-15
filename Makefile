@@ -8,6 +8,9 @@ INCLUDE_DIR = include
 SRC_DIR = src
 TESTS_DIR = tests
 
+ROOT_PATH = $(abspath ./)
+TEST_SCRIPT = $(abspath ./run_tests.sh)
+
 SH = /bin/bash
 
 .PHONY: clean install tests run_tests
@@ -28,8 +31,7 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(INCLUDE_DIR)/%.h
 tests: $(addprefix $(BIN_DIR)/tests/,$(tests))
 
 run_tests: tests
-	@echo "Running tests..."
-	$(SH) run_tests.sh "./bin/tests"
+	@$(TEST_SCRIPT) "$(ROOT_PATH)/bin/tests"
 
 $(BIN_DIR)/tests/%: $(TESTS_DIR)/%.c $(LIB_DIR)/libwavefront.a
 	@mkdir -p $(@D)
