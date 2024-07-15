@@ -27,35 +27,49 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
     WavefrontGeometry *g = wavefront_geometry_init();
     size_t vertices_total_count = 0;
     size_t faces_total_count = 0;
+    size_t groups_total_count = 0;
 
     size_t objects_total_count = 0;
     size_t current_obj_id = 0;
-    size_t current_vertex_offset = 0;
-    size_t prev_vertex_offset = 0;
+    size_t current_face_offset = 0;
+    size_t prev_face_offset = 0;
     // Looking up for how much memory we should allocate to store
     // all vertices/faces data.
     while (!feof(file)) {
         char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
-        trim_after(linebuf, "\r\n");
-        if (strlen(linebuf) > 2) {
-            if (starts_with(linebuf, "v ")) {
+        trim_after(read_buf, "\r\n");
+        read_buf = first_nonspace(read_buf); // trimming tabs/spaces/etc at the start of the line (affects further parsing).
+        if (strlen(read_buf) > 2) {
+            if (starts_with(read_buf, "v ")) {
                 vertices_total_count++;
             }
-            if (starts_with(linebuf, "f ")) {
+            if (starts_with(read_buf, "f ")) {
                 faces_total_count++;
             }
-            if (starts_with(linebuf, "o ")) {
+            if (starts_with(read_buf, "o ")) {
                 objects_total_count++;
+            }
+            if (starts_with(linebuf, "g ")) {
+                groups_total_count++;
             }
         }
     }
     rewind(file);
 
-    // TODO: safety check to protect against allocating 0 memory.
+    g->objects = objects_total_count > 0
+        ? (Object *)malloc(objects_total_count * sizeof(Object))
+        : NULL;
+    g->objects_count = objects_total_count;
+
+    // TODO: safety check to protect against allocating 0 memory for vertices/faces.
     g->vertices = (float *)malloc(vertices_total_count * 4 * sizeof(float));
     g->faces = (Face *)malloc(faces_total_count * sizeof(Face));
+
     g->objects = objects_total_count > 0 ? (Object *)malloc(objects_total_count * sizeof(Object))
                                     : NULL;
+    g->groups = (Group *)malloc(groups_total_count * sizeof(Group));
+    g->groups_count = groups_total_count;
+
     size_t vw = 0;
     size_t fw = 0;
 
@@ -65,36 +79,36 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
     while (!feof(file)) {
         char *read_buf = fgets(linebuf, LINEBUF_SIZE, file);
         if (read_buf == NULL) continue;
-        const size_t new_len = trim_comment(linebuf);
-        trim_after(linebuf, "\r\n");
-        trim_trailing_spaces(linebuf);
-        if (strlen(linebuf) < 2) continue;
+        const size_t new_len = trim_comment(read_buf);
+        trim_after(read_buf, "\r\n");
+        trim_trailing_spaces(read_buf);
+        read_buf = first_nonspace(read_buf); // trimming tabs/spaces/etc at the start of the line (affects further parsing).
+        if (strlen(read_buf) < 2) continue;
 
-        if (starts_with(linebuf, "v ")) {
+        if (starts_with(read_buf, "v ")) {
             // Now line looks like "v %f %f %f [%f]" and we can parse it with scanf easily.
             float vertex[4] = { 0, 0, 0, 1.0 };
-            const size_t coordinate_count = count_numbers(linebuf);
+            const size_t coordinate_count = count_numbers(read_buf);
             if (coordinate_count == 4) {
-                sscanf(linebuf, "%*s %f %f %f %f",
+                sscanf(read_buf, "%*s %f %f %f %f",
                         &vertex[0],
                         &vertex[1],
                         &vertex[2],
                         &vertex[3]);
             }
             else {
-                sscanf(linebuf, "%*s %f %f %f", &vertex[0], &vertex[1], &vertex[2]);
+                sscanf(read_buf, "%*s %f %f %f", &vertex[0], &vertex[1], &vertex[2]);
             }
             memcpy(&g->vertices[vw], vertex, 4*sizeof(float));
             vw += 4;
-            current_vertex_offset++;
         }
 
-        if (starts_with(linebuf, "f ")) {
+        if (starts_with(read_buf, "f ")) {
             Face face;
-            const size_t vertices_count = count_words(&linebuf[2]); // Discarding letter 'f' initially.
+            const size_t vertices_count = count_words(&read_buf[2]); // Discarding letter 'f' initially.
             face.vertices_data = (idx_t *)malloc(vertices_count * 3 * sizeof(idx_t));
             face.vertices_count = vertices_count;
-            StrSplit *splitted = split(&linebuf[2], " ");
+            StrSplit *splitted = split(&read_buf[2], " ");
             for (size_t i = 0; i < splitted->len; i++) {
                 if (strlen(splitted->items[i]) >= 1) {
                     if (face_vertex == NULL) {
@@ -113,25 +127,37 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
                 }
             }
             g->faces[fw++] = face;
+            current_face_offset++;
             str_split_free(splitted);
         }
 
-        if (starts_with(linebuf, "o ")) {
-            const size_t name_beginning = 2 + strspn(&linebuf[2], " ");
-            const size_t name_len = strlen(&linebuf[name_beginning]);
+        if (starts_with(read_buf, "g ")) {
+            StrSplit *group_names = split(&read_buf[2], " ");
+            for (size_t i = 0; i < group_names->len; i++) {
+                const char *name = group_names->items[i];
+                const wavefront_id_t group_id = wavefront_search_group(g, name);
+                if (group_id != g->groups_count) {
+                }
+            }
+            // First splitting string with the group's names to have an idea
+            // which groups' info we should modify.
+            // Seems like I need to create somewhat like ArrayList or something.
+        }
+
+        if (starts_with(read_buf, "o ")) {
+            const size_t name_beginning = 2 + strspn(&read_buf[2], " ");
+            const size_t name_len = strlen(&read_buf[name_beginning]);
             g->objects[current_obj_id].name = alloc_string(name_len);
-            memcpy(g->objects[current_obj_id].name, &linebuf[name_beginning], name_len);
+            memcpy(g->objects[current_obj_id].name, &read_buf[name_beginning], name_len);
             g->objects[current_obj_id].id = current_obj_id;
-            g->objects[current_obj_id].group_count = 0;
-            g->objects[current_obj_id].owned_vertices.offset = current_vertex_offset;
-            g->objects[current_obj_id].groups = NULL;
+            g->objects[current_obj_id].owned_faces.offset = current_face_offset;
             if (current_obj_id != 0) {
-                g->objects[current_obj_id - 1].owned_vertices.len = current_vertex_offset - prev_vertex_offset;
+                g->objects[current_obj_id - 1].owned_faces.len = current_face_offset - prev_face_offset;
             }
             if (current_obj_id == objects_total_count - 1) {
-                g->objects[current_obj_id].owned_vertices.len = vertices_total_count - current_vertex_offset;
+                g->objects[current_obj_id].owned_faces.len = faces_total_count - current_face_offset;
             }
-            prev_vertex_offset = current_vertex_offset;
+            prev_face_offset = current_face_offset;
             current_obj_id++;
         }
     }
@@ -140,7 +166,6 @@ WavefrontGeometry *wavefront_fread(FILE *restrict file) {
 
     g->vertices_count = vertices_total_count;
     g->faces_count = faces_total_count;
-    g->objects_count = objects_total_count;
     return g;
 }
 
@@ -181,4 +206,29 @@ size_t trim_comment(char *line) {
     const char trimmer[2] = { COMMENT_MARKER, '\0' };
     trim_after(line, trimmer);
     return strlen(line);
+}
+
+void wavefront_register_group(WavefrontGeometry *geometry, const char *name) {
+    static size_t next_group_id = 0;
+    strcpy(geometry->groups[next_group_id].name, name);
+    geometry->groups[next_group_id].id = next_group_id;
+    next_group_id++;
+}
+
+// Returns index of the group with the specified name if found.
+// Returns groups_count if nothing is found.
+wavefront_id_t wavefront_search_group(WavefrontGeometry *geometry, const char *name) {
+    for (wavefront_id_t i = 0; i < geometry->groups_count; i++) {
+        if (geometry->groups[i] == NULL) break;
+        if (strcmp(geometry->groups[i].name, name) == 0) {
+            return i;
+        }
+    }
+    return geometry->groups_count;
+}
+
+void group_free(Group *g) {
+    if (g != NULL) {
+        free(g->name);
+    }
 }

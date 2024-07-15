@@ -26,16 +26,26 @@ void trim_after(char *line, const char *trimmer) {
     }
 }
 
+// Searches for first non-space character in the string
+// and returns it's address.
+// Can return address of the terminating null if string
+// consists only of space-like characters.
+char *first_nonspace(char *line) {
+    size_t i = 0;
+    while (isspace(line[i]) && i < strlen(line)) ++i;
+    return &line[i];
+}
+
+// Trims trailing spaces and space-like characters from the end
+// of the string.
+// Be aware that it'll cut string that contains only spaces into zero-length string.
 void trim_trailing_spaces(char *line) {
     if (strlen(line) > 0) {
         const size_t len = strlen(line);
         if (isspace(line[len-1])) {
-            for (size_t i = len - 1; i > 0; i--) {
-                if (isspace(line[i]) && !isspace(line[i-1])) {
-                    line[i] = '\0';
-                    return;
-                }
-            }
+            size_t i = len - 1;
+            while (!(isspace(line[i]) && !isspace(line[i-1])) && i > 0) --i;
+            line[i] = '\0';
         }
     }
 }
